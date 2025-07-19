@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sony Color Lab Integration Presentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Brilliant Blues -->
+    <!-- Application Structure Plan: This SPA is structured as a slide presentation, with each major section of the original infographic becoming a distinct, navigable slide. This linear flow is ideal for a formal presentation, ensuring each point is delivered clearly without visual clutter from other sections. Navigation is handled via simple next/previous buttons. -->
+    <!-- Visualization & Content Choices: KPIs (Big Number/Inform), User Acquisition (Donut Chart/Compare Proportions), Workflows (HTML+CSS Diagram/Organize Process), Brand Impact (Radar Chart/Compare States). All choices use Chart.js (Canvas) or HTML/CSS to avoid SVG/Mermaid, adhering to requirements and selecting the best visualization for each data storytelling goal. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light background for professionalism */
+            overflow: hidden; /* Hide scrollbars for slide presentation */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .slide-container {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%; /* Ensure slides take full available height */
+            background-color: #f0f4f8;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+            box-sizing: border-box; /* Include padding in element's total width and height */
+        }
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .sony-blue-dark { color: #004AAD; }
+        .sony-blue-bright { color: #006EE6; }
+        .bg-sony-blue-dark { background-color: #004AAD; }
+        .bg-sony-blue-bright { background-color: #006EE6; }
+        .border-sony-blue-bright { border-color: #006EE6; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px; /* Constrain chart width for slides */
+            margin-left: auto;
+            margin-right: auto;
+            height: 280px; /* Base height for charts on slides */
+            max-height: 350px; /* Max height to prevent overflow */
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px; /* Taller on desktop */
+                max-width: 600px;
+            }
+        }
+        .flowchart-arrow {
+            font-size: 2.5rem;
+            color: #99D5FF; /* Light blue for arrows */
+            line-height: 1;
+        }
+        .kpi-number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        /* New Timeline Styles */
+        .timeline-wrapper {
+            position: relative;
+            max-width: 768px; /* Constrain timeline width */
+            margin: 0 auto;
+            padding: 20px 0;
+        }
+        .timeline-vertical-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #cbd5e1; /* gray-300 */
+            transform: translateX(-50%);
+        }
+        .timeline-entry {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        .timeline-entry:last-child {
+            margin-bottom: 0;
+        }
+        .timeline-content-block {
+            width: 50%;
+            padding: 0 2rem;
+            box-sizing: border-box;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2.5rem;
+            height: 2.5rem;
+            background-color: #004AAD; /* sony-blue-dark */
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.25rem;
+            z-index: 10;
+            box-shadow: 0 0 0 4px #f0f4f8; /* Match body background */
+        }
+        .timeline-entry:nth-child(odd) .timeline-content-block:first-child {
+            text-align: right;
+            padding-right: 3rem; /* Space for dot */
+        }
+        .timeline-entry:nth-child(odd) .timeline-content-block:last-child {
+            text-align: left;
+            padding-left: 3rem; /* Space for dot */
+        }
+        .timeline-entry:nth-child(even) .timeline-content-block:first-child {
+            order: 2; /* Swap order for right alignment */
+            text-align: left;
+            padding-left: 3rem; /* Space for dot */
+        }
+        .timeline-entry:nth-child(even) .timeline-content-block:last-child {
+            order: 1; /* Swap order for right alignment */
+            text-align: right;
+            padding-right: 3rem; /* Space for dot */
+        }
+
+        @media (max-width: 767px) {
+            .timeline-vertical-line {
+                left: 1.5rem; /* Align left for mobile */
+                transform: translateX(0);
+            }
+            .timeline-dot {
+                left: 1.5rem;
+                transform: translateX(-50%);
+            }
+            .timeline-entry {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .timeline-content-block {
+                width: 100%;
+                padding: 0 0 0 3.5rem; /* Adjust padding for mobile */
+                text-align: left !important; /* Force left align */
+            }
+            .timeline-entry:nth-child(even) .timeline-content-block:first-child,
+            .timeline-entry:nth-child(even) .timeline-content-block:last-child {
+                order: unset; /* Reset order */
+                padding-left: 3.5rem;
+                padding-right: 0;
+            }
+            .timeline-entry .timeline-content-block:last-child {
+                display: none; /* Hide empty block on mobile */
+            }
+        }
+
+        .navigation-controls {
+            position: fixed;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .nav-button {
+            background-color: #004AAD;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .nav-button:hover {
+            background-color: #006EE6;
+        }
+        .slide-counter {
+            color: #004AAD;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #004AAD;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: none; /* Hidden by default */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <div class="slide-container">
+
+        <!-- Slide 1: Title Slide -->
+        <div id="slide1" class="slide active">
+            <div class="text-center max-w-4xl mx-auto">
+                <h1 class="text-5xl md:text-6xl font-extrabold sony-blue-dark mb-4">Integrating Sony Color Lab into Creator's App</h1>
+                <p class="text-xl md:text-2xl text-gray-600">Redefining the Creative Experience for Sony Users</p>
+                <p class="text-lg md:text-xl text-gray-500 mt-8">Presented by: Thai K. Pham, Digital Image Specialist, Sony Electronics Vietnam</p>
+                <p class="text-md text-gray-500">July 25, 2025</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Opportunity -->
+        <div id="slide2" class="slide">
+            <div class="text-center max-w-5xl mx-auto px-4">
+                <h2 class="text-4xl md:text-5xl font-bold mb-10 sony-blue-dark">1. Opportunity: Connecting Creativity and Technology</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
+                    <div class="bg-white rounded-xl shadow-lg p-8 border-l-4 border-sony-blue-bright flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-2xl font-bold mb-4 text-gray-800">Current Creator's App</h3>
+                            <p class="mb-6 text-gray-700 leading-relaxed">A robust, reliable platform for connectivity and management.</p>
+                        </div>
+                        <ul class="space-y-3 text-lg font-medium text-left">
+                            <li class="flex items-center text-gray-700"><span class="text-green-500 text-2xl mr-3">✔</span> Reliable image/video transfer</li>
+                            <li class="flex items-center text-gray-700"><span class="text-green-500 text-2xl mr-3">✔</span> Comprehensive remote control</li>
+                            <li class="flex items-center text-gray-700"><span class="text-green-500 text-2xl mr-3">✔</span> Cloud & LUT integration</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-8 border-l-4 border-orange-500 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-2xl font-bold mb-4 text-gray-800">Sony Color Lab</h3>
+                            <p class="mb-6 text-gray-700 leading-relaxed">A beloved community initiative, addressing the need for "straight-out-of-camera" colors, but with a manual workflow.</p>
+                        </div>
+                         <ul class="space-y-3 text-lg font-medium text-left">
+                            <li class="flex items-center text-gray-700"><span class="text-orange-500 text-2xl mr-3">✔</span> Addresses 'Sony color' perception</li>
+                            <li class="flex items-center text-orange-500 text-2xl mr-3">✔ Reduces post-processing time</li>
+                            <li class="flex items-center text-orange-500 text-2xl mr-3">✔ Proven market demand</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Challenge: Current Workflow -->
+        <div id="slide3" class="slide">
+            <div class="text-center max-w-5xl mx-auto px-4">
+                <h2 class="text-4xl md:text-5xl font-bold mb-10 sony-blue-dark">2. Challenge: The Current Workflow</h2>
+                <p class="max-w-3xl mx-auto text-xl mb-10 text-gray-700">The current manual process for using color recipes from Sony Color Lab is complex, time-consuming, and significantly hinders user creativity.</p>
+                 <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h3 class="text-2xl font-bold text-center mb-8 text-gray-800">Cumbersome Workflow</h3>
+                    <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 flex-wrap">
+                        <div class="bg-red-50 p-5 rounded-lg shadow-md text-center min-w-[160px] md:min-w-[180px] border border-red-200">Find recipe<br>on web</div>
+                        <div class="flowchart-arrow text-red-400">→</div>
+                        <div class="bg-red-50 p-5 rounded-lg shadow-md text-center min-w-[160px] md:min-w-[180px] border border-red-200">Open camera<br>menu</div>
+                        <div class="flowchart-arrow text-red-400">→</div>
+                        <div class="bg-red-50 p-5 rounded-lg shadow-md text-center min-w-[160px] md:min-w-[180px] border border-red-200">Manually input<br>dozens of settings</div>
+                         <div class="flowchart-arrow text-red-400">→</div>
+                        <div class="bg-red-50 p-5 rounded-lg shadow-md text-center min-w-[160px] md:min-w-[180px] border border-red-200">Test shoot<br>& repeat</div>
+                    </div>
+                    <p class="text-center mt-8 text-red-600 font-semibold text-lg">Result: High user friction, significant churn, limiting Color Lab's potential.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 4: Proof - KPIs & Channels -->
+        <div id="slide4" class="slide">
+            <div class="text-center max-w-5xl mx-auto px-4">
+                <h2 class="text-4xl md:text-5xl font-bold mb-10 sony-blue-dark">3. Proof: Voice from the Creative Community</h2>
+                <p class="text-gray-700 -mt-4 mb-10 text-xl">Data from Week 0028 (Jan 1, 2025 - July 18, 2025) shows strong engagement despite manual processes.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center mb-12">
+                    <div class="p-6 bg-blue-50 rounded-lg shadow-md border border-blue-100">
+                        <p class="kpi-number sony-blue-bright">161</p>
+                        <p class="text-lg text-gray-700 font-medium">Active Users (Past Week)</p>
+                    </div>
+                     <div class="p-6 bg-blue-50 rounded-lg shadow-md border border-blue-100">
+                        <p class="kpi-number sony-blue-bright">161</p>
+                        <p class="text-lg text-gray-700 font-medium">New Users (Past Week)</p>
+                    </div>
+                     <div class="p-6 bg-blue-50 rounded-lg shadow-md border border-blue-100">
+                        <p class="kpi-number sony-blue-bright">105s</p>
+                        <p class="text-lg text-gray-700 font-medium">Avg. Engagement Time</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-1 gap-12">
+                    <div>
+                        <h3 class="text-xl font-bold text-center mb-6 text-gray-800">New User Acquisition Channels</h3>
+                        <div class="chart-container">
+                            <canvas id="newUsersChannelChart"></canvas>
+                        </div>
+                        <p class="text-center mt-6 text-gray-600">Direct channels dominate, indicating organic interest and project reputation.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Proof - Why Users Love -->
+        <div id="slide5" class="slide">
+            <div class="text-center max-w-5xl mx-auto px-4">
+                <h2 class="text-4xl md:text-5xl font-bold mb-10 sony-blue-dark">3. Proof: Why Users Love Color Lab</h2>
+                <p class="text-gray-700 -mt-4 mb-10 text-xl">Users highly value time-saving and achieving unique aesthetics effectively.</p>
+                <div class="grid grid-cols-1 md:grid-cols-1 gap-12">
+                    <div>
+                        <h3 class="text-xl font-bold text-center mb-6 text-gray-800">Reasons for Engagement</h3>
+                        <div class="chart-container">
+                            <canvas id="reasonChart"></canvas>
+                        </div>
+                        <p class="text-center mt-6 text-gray-600">This data underscores the core value proposition of Sony Color Lab to its users.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Vision -->
+        <div id="slide6" class="slide">
+            <div class="text-center max-w-5xl mx-auto px-4">
+                <h2 class="text-4xl md:text-5xl font-bold mb-10 sony-blue-dark">4. Vision: A Unified Creative Hub</h2>
+                <p class="max-w-3xl mx-auto text-xl mb-10 text-gray-700">Transforming the Creator's App into a comprehensive creative ecosystem where users seamlessly explore, apply, and customize colors.</p>
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h3 class="text-2xl font-bold text-center mb-8 text-gray-800">Future Workflow: Intuitive & Fast</h3>
+                    <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 flex-wrap">
+                        <div class="bg-green-100 p-5 rounded-lg shadow-md text-center min-w-[160px] md:min-w-[180px] border border-green-200">Explore Color<br>Library</div>
+                        <div class="flowchart-arrow text-green-500">→</div>
+                        <div class="bg-green-100 p-5 rounded-lg shadow-md text-center min-w-[160px] md:min-w-[180px] border border-green-200">AI-Powered<br>Suggestions</div>
+                        <div class="flowchart-arrow text-green-500">→</div>
+                        <div class="bg-green-100 p-5 rounded-lg shadow-md text-center min-w-[160px] md:min-w-[180px] border border-green-200">One-Tap<br>Apply</div>
+                        <div class="flowchart-arrow text-green-500">→</div>
+                        <div class="bg-green-100 p-5 rounded-lg shadow-md text-center min-w-[160px] md:min-w-[180px] border border-green-200">Edit &<br>Personalize</div>
+                        <div class="flowchart-arrow text-green-500">→</div>
+                        <div class="bg-green-100 p-5 rounded-lg shadow-md text-center min-w-[160px] md:min-w-[180px] border border-green-200">Share with<br>Community</div>
+                    </div>
+                     <p class="text-center mt-8 text-green-700 font-semibold text-lg">Result: Intuitive, fast, and inspiring.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 7: Key Features Part 1 -->
+        <div id="slide7" class="slide">
+            <div class="text-center max-w-5xl mx-auto px-4">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-10 sony-blue-dark">5. Key Features: Empowering Creativity</h2>
+                <p class="max-w-3xl mx-auto text-xl mb-10 text-gray-700">The integrated app will provide powerful tools to unlock creative potential.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
+                        <p class="text-4xl mb-4 text-sony-blue-bright">📲</p>
+                        <h3 class="text-2xl font-bold mb-3 text-gray-800">Seamless Application</h3>
+                        <p class="text-gray-700 leading-relaxed">Apply color recipes to camera or RAW photos in-app with a single tap.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
+                        <p class="text-4xl mb-4 text-sony-blue-bright">🎨</p>
+                        <h3 class="text-2xl font-bold mb-3 text-gray-800">Intuitive Editing</h3>
+                        <p class="text-gray-700 leading-relaxed">Basic (exposure, contrast) and advanced (selective) photo editing tools designed simply for mobile.</p>
+                    </div>
+                     <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
+                        <p class="text-4xl mb-4 text-sony-blue-bright">📦</p>
+                        <h3 class="text-2xl font-bold mb-3 text-gray-800">LUT (.cube) Export</h3>
+                        <p class="text-gray-700 leading-relaxed">Download any recipe as a .cube file for use in professional video workflows.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
+                        <p class="text-4xl mb-4 text-sony-blue-bright">💡</p>
+                        <h3 class="text-2xl font-bold mb-3 text-gray-800">AI Recipe Suggestion & Refinement</h3>
+                        <p class="text-gray-700 leading-relaxed">Leverage AI API to intelligently suggest color recipes based on user preferences or image analysis, and refine existing ones.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: AI Feature Demo -->
+        <div id="slide8_ai_feature" class="slide">
+            <div class="text-center max-w-5xl mx-auto px-4">
+                <h2 class="text-4xl md:text-5xl font-bold mb-10 sony-blue-dark">5. Key Features: AI-Powered Color Recipe Suggestion</h2>
+                <p class="max-w-3xl mx-auto text-xl mb-10 text-gray-700">Experience a glimpse of the future: Describe your desired look, and our AI will suggest a custom color recipe.</p>
+                <div class="bg-white rounded-xl shadow-lg p-8 max-w-2xl mx-auto">
+                    <h3 class="text-2xl font-bold mb-6 text-gray-800">Generate Your Custom Look ✨</h3>
+                    <textarea id="aiPromptInput" class="w-full p-4 border border-gray-300 rounded-lg mb-4 resize-y h-32 focus:outline-none focus:ring-2 focus:ring-sony-blue-bright" placeholder="Describe the mood or style (e.g., 'warm vintage portrait', 'moody cyberpunk night', 'vibrant nature landscape')..."></textarea>
+                    <button id="generateRecipeBtn" class="bg-sony-blue-dark text-white px-6 py-3 rounded-lg font-bold hover:bg-sony-blue-bright transition-colors flex items-center justify-center mx-auto">
+                        Generate Recipe ✨
+                        <div id="loadingSpinner" class="loading-spinner ml-3"></div>
+                    </button>
+                    <div id="aiResponseOutput" class="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg text-left text-gray-700 min-h-[100px] overflow-auto">
+                        Your AI-generated recipe will appear here.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Key Features Part 2 (shifted from original slide 8) -->
+        <div id="slide9" class="slide">
+            <div class="text-center max-w-5xl mx-auto px-4">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-10 sony-blue-dark">5. Key Features: Empowering Creativity (Cont.)</h2>
+                <p class="max-w-3xl mx-auto text-xl mb-10 text-gray-700">Further capabilities will enhance the user's creative control and community engagement.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
+                        <p class="text-4xl mb-4 text-sony-blue-bright">🤖</p>
+                        <h3 class="text-2xl font-bold mb-3 text-gray-800">AI Color Matching</h3>
+                        <p class="text-gray-700 leading-relaxed">Use AI to extract and apply colors from reference images. Current biggest challenge: requires a real AI API.</p>
+                    </div>
+                     <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
+                        <p class="text-4xl mb-4 text-sony-blue-bright">🌐</p>
+                        <h3 class="text-2xl font-bold mb-3 text-gray-800">Community Library</h3>
+                        <p class="text-gray-700 leading-relaxed">Share your recipes and discover countless styles from other Sony users.</p>
+                    </div>
+                     <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
+                        <p class="text-4xl mb-4 text-sony-blue-bright">🛠️</p>
+                        <h3 class="text-2xl font-bold mb-3 text-gray-800">Customization & Save</h3>
+                        <p class="text-gray-700 leading-relaxed">Fine-tune every parameter of a recipe and save it as your personal preset.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Strategic Impact (shifted from original slide 9) -->
+        <div id="slide10" class="slide">
+            <div class="text-center max-w-5xl mx-auto px-4">
+                <h2 class="text-4xl md:text-5xl font-bold mb-10 sony-blue-dark">6. Strategic Impact & Competitive Advantage</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                     <div>
+                        <h3 class="text-2xl font-bold text-center mb-6 text-gray-800">Elevating Brand Positioning</h3>
+                        <div class="chart-container">
+                            <canvas id="impactChart"></canvas>
+                        </div>
+                        <p class="text-center mt-6 text-gray-600">This integration significantly boosts user satisfaction and brand loyalty, turning perceived weaknesses into strong advantages.</p>
+                    </div>
+                    <div>
+                         <h3 class="text-2xl font-bold mb-6 text-gray-800">Outperforming Competitors</h3>
+                        <p class="text-gray-700 mb-6 leading-relaxed">This integration not only catches up but surpasses rivals, transforming a perceived weakness into a unique strength.</p>
+                         <ul class="space-y-4 text-lg text-left">
+                            <li class="p-4 bg-gray-100 rounded-md border border-gray-200"><strong>Vs. Fujifilm:</strong> Offers deeper customization and an open community platform, building on Sony's superior connectivity reliability.</li>
+                            <li class="p-4 bg-gray-100 rounded-md border border-gray-200"><strong>Vs. Leica/Canon:</strong> Delivers a creative, color-centric workflow that rivals currently lack, beyond basic utility.</li>
+                         </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Roadmap and Call to Action (shifted from original slide 10) -->
+        <div id="slide11" class="slide">
+            <div class="text-center max-w-5xl mx-auto px-4">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-10 sony-blue-dark">7. Roadmap and Call to Action</h2>
+                 <div class="timeline-wrapper">
+                    <div class="timeline-vertical-line"></div>
+
+                    <!-- Phase 1 -->
+                    <div class="timeline-entry">
+                        <div class="timeline-content-block w-1/2 pr-8 text-right">
+                            <div class="bg-sony-blue-bright text-white p-6 rounded-xl shadow-lg">
+                                <h3 class="mb-2 font-bold text-2xl">Phase 1 (Short-term)</h3>
+                                <ul class="text-base leading-snug tracking-wide text-blue-100 list-disc list-inside">
+                                    <li>Integrate direct application of Sony Color Lab recipes (one-tap).</li>
+                                    <li>Enable in-app preview and post-capture application on JPG/RAW.</li>
+                                    <li>Implement LUT (.cube) export functionality.</li>
+                                    <li>Ensure robust and fast image/video transfer reliability.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="timeline-dot">1</div>
+                        <div class="timeline-content-block w-1/2 pl-8"></div>
+                    </div>
+
+                    <!-- Phase 2 -->
+                    <div class="timeline-entry">
+                        <div class="timeline-content-block w-1/2 pl-8 text-left">
+                            <div class="bg-sony-blue-dark text-white p-6 rounded-xl shadow-lg">
+                                <h3 class="mb-2 font-bold text-2xl">Phase 2 (Mid-term)</h3>
+                                <ul class="text-base leading-snug tracking-wide text-blue-100 list-disc list-inside">
+                                    <li>Develop advanced editing tools (e.g., Halation, Volumetric Grain).</li>
+                                    <li>**Integrate AI API for intelligent Color Matching.**</li>
+                                    <li>**Implement AI-powered recipe suggestion and refinement.**</li>
+                                    <li>Introduce intuitive selective adjustment tools (U-Point inspired).</li>
+                                    <li>Enable comprehensive camera settings management within the app.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="timeline-dot">2</div>
+                        <div class="timeline-content-block w-1/2 pr-8"></div>
+                    </div>
+
+                    <!-- Phase 3 -->
+                    <div class="timeline-entry">
+                        <div class="timeline-content-block w-1/2 pr-8 text-right">
+                            <div class="bg-sony-blue-bright text-white p-6 rounded-xl shadow-lg">
+                                <h3 class="mb-2 font-bold text-2xl">Phase 3 (Long-term)</h3>
+                                <ul class="text-base leading-snug tracking-wide text-blue-100 list-disc list-inside">
+                                    <li>Launch a vibrant community platform for sharing and discovery.</li>
+                                    <li>Enhance AI with smart recommendations based on user style/content.</li>
+                                    <li>Explore deeper integration with other Sony creative hardware/software.</li>
+                                    <li>Optimize for advanced mobile processing (GPU acceleration, PWA model).</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="timeline-dot">3</div>
+                        <div class="timeline-content-block w-1/2 pl-8"></div>
+                    </div>
+                </div>
+                <p class="text-xl max-w-3xl mx-auto mt-12 leading-relaxed">Let's build the future of Sony creativity together. We need HQ support for <strong class="sony-blue-dark">technical resources</strong> and especially a <strong class="sony-blue-dark">robust AI API</strong> to make this vision a reality.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="navigation-controls">
+        <button id="prevBtn" class="nav-button">Previous</button>
+        <span id="slideCounter" class="slide-counter">1 / 11</span>
+        <button id="nextBtn" class="nav-button">Next</button>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        let currentSlideIndex = 0;
+        const slideCounter = document.getElementById('slideCounter');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        let chartsInitialized = {};
+
+        const tooltipTitleCallback = {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            const item = tooltipItems[0];
+                            let label = item.chart.data.labels[item.dataIndex];
+                            return Array.isArray(label) ? label.join(' ') : label;
+                        }
+                    }
+                }
+            }
+        };
+
+        const chartColors = {
+            blueDark: '#004AAD',
+            blueBright: '#006EE6',
+            blueLight: '#99D5FF',
+            orange: '#FB923C',
+            green: '#34D399',
+        };
+        
+        const processLabel = (label) => {
+            const maxLength = 16;
+            if (label.length <= maxLength) return label;
+            const words = label.split(' ');
+            const lines = [];
+            let currentLine = '';
+            for (const word of words) {
+                if ((currentLine + ' ' + word).trim().length > maxLength) {
+                    lines.push(currentLine.trim());
+                    currentLine = word;
+                } else {
+                    currentLine = (currentLine + ' ' + word).trim();
+                }
+            }
+            if (currentLine) lines.push(currentLine);
+            return lines;
+        };
+
+        function initializeChart(chartId, chartConfig) {
+            if (chartsInitialized[chartId]) {
+                chartsInitialized[chartId].destroy(); // Destroy existing chart if it exists
+            }
+            const ctx = document.getElementById(chartId);
+            if (ctx) {
+                chartsInitialized[chartId] = new Chart(ctx, chartConfig);
+            }
+        }
+
+        function renderChartsForSlide(slideId) {
+            if (slideId === 'slide4') {
+                initializeChart('newUsersChannelChart', {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Direct', 'Organic Social', 'Referral'],
+                        datasets: [{
+                            label: 'New Users',
+                            data: [123, 32, 6],
+                            backgroundColor: [chartColors.blueDark, chartColors.blueBright, chartColors.blueLight],
+                            borderColor: '#FFFFFF',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: tooltipTitleCallback.plugins
+                    }
+                });
+            } else if (slideId === 'slide5') {
+                initializeChart('reasonChart', {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Reduces post-processing', 'Unique aesthetic styles', 'Improves skin tones', 'Ease of use'],
+                        datasets: [{
+                            label: 'Reasons',
+                            data: [50, 25, 15, 10],
+                            backgroundColor: [chartColors.blueBright, chartColors.blueLight, chartColors.orange, chartColors.green],
+                            borderColor: '#FFFFFF',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: tooltipTitleCallback.plugins
+                    }
+                });
+            } else if (slideId === 'slide10') {
+                initializeChart('impactChart', {
+                    type: 'radar',
+                    data: {
+                        labels: ['User Satisfaction', 'Brand Loyalty', ['Competitive', 'Advantage'], ['Cohesive', 'Ecosystem'], ['Addresses Color', 'Perception']],
+                        datasets: [{
+                            label: 'Current State',
+                            data: [6, 5, 4, 5, 4],
+                            fill: true,
+                            backgroundColor: 'rgba(251, 146, 60, 0.2)',
+                            borderColor: 'rgb(251, 146, 60)',
+                            pointBackgroundColor: 'rgb(251, 146, 60)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(251, 146, 60)'
+                        }, {
+                            label: 'After Integration',
+                            data: [9, 8, 8, 9, 8],
+                            fill: true,
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgb(54, 162, 235)',
+                            pointBackgroundColor: 'rgb(54, 162, 235)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(54, 162, 235)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: tooltipTitleCallback.plugins,
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    display: false
+                                },
+                                suggestedMin: 0,
+                                suggestedMax: 10,
+                                pointLabels: {
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function showSlide(index) {
+            if (index < 0 || index >= slides.length) return;
+
+            slides[currentSlideIndex].classList.remove('active');
+            slides[currentSlideIndex].querySelectorAll('canvas').forEach(canvas => {
+                if (chartsInitialized[canvas.id]) {
+                    chartsInitialized[canvas.id].destroy(); // Destroy chart when leaving slide
+                    delete chartsInitialized[canvas.id];
+                }
+            });
+
+            currentSlideIndex = index;
+            slides[currentSlideIndex].classList.add('active');
+            slideCounter.textContent = `${currentSlideIndex + 1} / ${slides.length}`;
+
+            // Render charts for the active slide
+            renderChartsForSlide(slides[currentSlideIndex].id);
+
+            prevBtn.disabled = currentSlideIndex === 0;
+            nextBtn.disabled = currentSlideIndex === slides.length - 1;
+        }
+
+        function nextSlide() {
+            showSlide(currentSlideIndex + 1);
+        }
+
+        function prevSlide() {
+            showSlide(currentSlideIndex - 1);
+        }
+
+        prevBtn.addEventListener('click', prevSlide);
+        nextBtn.addEventListener('click', nextSlide);
+
+        // Add event listener for the AI feature button
+        document.addEventListener('DOMContentLoaded', () => {
+            const generateRecipeBtn = document.getElementById('generateRecipeBtn');
+            const aiPromptInput = document.getElementById('aiPromptInput');
+            const aiResponseOutput = document.getElementById('aiResponseOutput');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            if (generateRecipeBtn) {
+                generateRecipeBtn.addEventListener('click', async () => {
+                    const prompt = aiPromptInput.value.trim();
+                    if (!prompt) {
+                        aiResponseOutput.textContent = "Please describe the desired mood or style.";
+                        return;
+                    }
+
+                    loadingSpinner.style.display = 'block'; // Show spinner
+                    generateRecipeBtn.disabled = true; // Disable button
+
+                    aiResponseOutput.textContent = "Generating recipe...";
+
+                    let chatHistory = [];
+                    chatHistory.push({ role: "user", parts: [{ text: `Generate a Sony Picture Profile color recipe based on the following mood/style description: "${prompt}". Focus on specific Picture Profile settings like Gamma, Black Level, Color Mode, Saturation, Color Phase, and Color Depth (R, G, B, C, M, Y). Provide a brief explanation of the suggested look. Format the output clearly with settings listed.` }] });
+
+                    const payload = { contents: chatHistory };
+                    const apiKey = ""; 
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const result = await response.json();
+
+                        if (result.candidates && result.candidates.length > 0 &&
+                            result.candidates[0].content && result.candidates[0].content.parts &&
+                            result.candidates[0].content.parts.length > 0) {
+                            const text = result.candidates[0].content.parts[0].text;
+                            aiResponseOutput.textContent = text;
+                        } else {
+                            aiResponseOutput.textContent = "Error: Could not generate recipe. Please try again.";
+                            console.error("Unexpected API response structure:", result);
+                        }
+                    } catch (error) {
+                        aiResponseOutput.textContent = `Error: ${error.message}. Please check your network or try again.`;
+                        console.error("Error calling Gemini API:", error);
+                    } finally {
+                        loadingSpinner.style.display = 'none'; // Hide spinner
+                        generateRecipeBtn.disabled = false; // Enable button
+                    }
+                });
+            }
+
+            // Initialize the first slide and its charts after DOM is loaded
+            showSlide(0);
+
+            prevBtn.addEventListener('click', prevSlide);
+            nextBtn.addEventListener('click', nextSlide);
+        });
+    </script>
+</body>
+</html>
